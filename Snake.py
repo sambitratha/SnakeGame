@@ -40,6 +40,19 @@ TIMEGAP = 9
 WIDTH = 4
 VELOCITY = 1
 DIRECTION = EAST
+lengthup = False
+triggered = False
+
+
+def getLength(s):
+    rs = 0
+    for i in range(len(s) - 1):
+        if s[i][0] == s[i+1][0]:
+            rs += abs(s[i][1] - s[i+1][1])
+        else:
+            rs += abs(s[i][0] - s[i+1][0])
+
+    return rs
 
 class Mythread(Thread):
     global toggle
@@ -79,28 +92,30 @@ class Mythread(Thread):
 
 
 class food:
-    def __int__(self, center, length, type):
-        self.center = center
-        self.length = length
-        self.type = type
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.type = 0
+        self.h = 1
+        self.center = []
 
-    def drawfood(self):
-        pygame.draw.rect(DISPLAYSURF, RED , (self.center[0] - self.length/2, self.center[1] - self.length/2, self.length, self.length))
 
-    def getGlobalBounds(self):
-        start_x = self.center[0] - self.length/2
-        end_x = self.center[0] + self.length/2
-        Upper_y = self.center[1] - self.length/2
-        Lower_y = self.center[1] + self.length/2
 
-        return start_x, end_x, Upper_y, Lower_y
+    def randomize(self):
+        self.x = random.randint(100,WINDOWLENGTH - 100)
+        self.y = random.randint(100, WINDOWHEIGHT- 100)
+        self.h = random.randint(1,3)*5
 
-    def type(self):
-        return self.type
+    def getinitcoord(self):
+        return [self.x , self.y]
+
+    def getwidth(self):
+        return self.h
+
 
 
 def drawSnake():
-    global Points, start, stop
+    global Points, start, stop, lengthup
 
     for i in range(len(Points)- 1):
         pygame.draw.line(DISPLAYSURF, GREEN, (Points[i][0], Points[i][1]), (Points[i+1][0], Points[i+1][1]) , WIDTH)
@@ -120,43 +135,58 @@ def drawSnake():
         start[1] += VELOCITY
         Points[0][1] = start[1]
 
-    if len(Points) > 1:
+    if len(Points) > 1 and not lengthup :
         stop = Points[-1]
+
         if abs(Points[-2][0] - stop[0]) == VELOCITY or abs(Points[-2][1] - stop[1]) == VELOCITY:
+
             x = Points[-2][0]
             y = Points[-2][1]
             stop = [x , y]
             Points.pop(-1)
         else:
-            if stop[0]  == Points[-2][0]:
+            if stop[0]  == Points[-2][0] :
                 if stop[1] > Points[-2][1]:
                     Points[-1][1] -= VELOCITY
                 else:
                     Points[-1][1] += VELOCITY
             else:
-                if stop[0] > Points[-2][0]:
+                if stop[0] > Points[-2][0] :
                     Points[-1][0] -= VELOCITY
                 else:
                     Points[-1][0] += VELOCITY
 
 
-    else:
-        stop[0] += VELOCITY
-        Points[-1][0] += VELOCITY
+    if lengthup:
+        #print getLength(Points)
+        #print Points
+        lengthup = False
 
 
 
 
 
 def main():
-    global Points, start, stop, DIRECTION, toggle
+    global Points, start, stop, DIRECTION, toggle, lengthup, triggered
     t1 = Mythread()
     t1.run()
+    Food = food()
+    Food.randomize()
+
     while True:
         DISPLAYSURF.fill(WHITE)
         drawSnake()
-        if toggle :
-            pygame.draw.rect(DISPLAYSURF, RED , (100,200,5,5))
+        pygame.draw.rect(DISPLAYSURF, RED, (Food.getinitcoord()[0], Food.getinitcoord()[1], Food.getwidth(), Food.getwidth()))
+        if triggered:
+            Food.randomize()
+            triggered = False
+            #pygame.draw.rect(DISPLAYSURF, RED, (Food.getinitcoord()[0], Food.getinitcoord()[1], Food.getwidth(), Food.getwidth()))
+
+        if abs(Points[0][0] - Food.getinitcoord()[0]) <= Food.getwidth() and abs(Points[0][1] - Food.getinitcoord()[1]) <= Food.getwidth() :
+            lengthup = True
+            print getLength(Points)
+            print Points
+            triggered = True
 
         for event in pygame.event.get():
 
